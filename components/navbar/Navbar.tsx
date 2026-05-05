@@ -2,6 +2,7 @@ import Container from "@/components/global/Container";
 import Logo from "./Logo";
 import NavSearch from "./NavSearch";
 import CartButton from "./CartButton";
+import DarkMode from "./DarkMode";
 import LinksDropdown from "./LinksDropdown";
 
 export default function Navbar() {
@@ -12,6 +13,7 @@ export default function Navbar() {
         <NavSearch />
         <div className="flex items-center gap-4">
           <CartButton />
+          <DarkMode />
           <LinksDropdown />
         </div>
       </Container>
