@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import Navbar from "@/components/navbar/Navbar";
+import Container from "@/components/global/Container";
 
 export const metadata: Metadata = {
   title: "Next Store",
@@ -13,7 +15,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        <Navbar />
+        <Container className="py-20">{children}</Container>
+      </body>
     </html>
   );
 }
