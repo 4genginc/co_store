@@ -69,6 +69,20 @@ The application includes:
 
 ---
 
+# Sources & Deviations
+
+This plan was distilled from a written Next Store manual (the Coding Addict / Smilga-style tutorial). When the manual conflicts with the current versions of the underlying tools, or when we want to substitute our own data, we deviate — and record the deviation here and in `docs/learning.md`.
+
+**Rules of thumb:**
+
+- The plan describes *intent and acceptance gates*, not exact tool versions or fixture content.
+- Any deviation from the manual that affects future phases (version pin, env-var rename, image-host change, schema variation) gets a `docs/learning.md` entry.
+- Seed/fixture content (product catalog, hero images, copy) is treated as substitutable. Use the manual's data, your own catalog, or anything else that satisfies the bead's acceptance criterion. Note the choice in the relevant phase if it affects later phases (e.g. image hosts → `next.config.ts` `remotePatterns`).
+- Tracked deviations live in `docs/learning.md`. Open active deviations as of last edit:
+  - **L-001** — Prisma pinned to v6 (Prisma 7 moved datasource URLs out of `schema.prisma`). See Phase 2.1.
+
+---
+
 # Phase 0 — Project Foundation
 
 ## Objective
@@ -204,6 +218,8 @@ bd create \
   --acceptance="Prisma client generates successfully; utils/db.ts exports singleton client; npx tsc --noEmit passes."
 ```
 
+> **Version note.** Pin `prisma@^6` + `@prisma/client@^6`. Prisma 7 moved `url` and `directUrl` out of `schema.prisma` into `prisma.config.ts` + driver adapters, which doesn't match the schema-based pattern this phase describes. See `docs/learning.md` entry **L-001** for the v7 migration path when upgrading.
+
 ### 2.2 Add Product model
 
 ```bash
@@ -221,6 +237,8 @@ bd create \
   --description="Create prisma/products.json and prisma/seed.js based on the manual. Seed several products with name, company, description, featured, image, price, and clerkId. Do not build product UI yet." \
   --acceptance="node prisma/seed creates products; Prisma Studio shows seeded products; no duplicate seed failure on a clean database."
 ```
+
+> **Seed source.** `prisma/products.json` content is substitutable — manual catalog, your own catalog, or another tutorial's set. Whatever you pick, make sure the `image` URLs are reachable and add their hostname(s) to `next.config.ts` `remotePatterns` when Phase 3.3 lands. If your seed deviates from the source manual in a way that affects later phases (different field names, different image hosts, locale-specific copy), record it in `docs/learning.md`.
 
 ## Phase 2 Verification
 
@@ -282,6 +300,8 @@ bd create \
   --description="Implement ProductsGrid, ProductsList, FavoriteToggleButton placeholder, and ProductsContainer. Support grid/list selection via layout search param. Use Next Image and formatCurrency. Configure next.config remotePatterns for external product images." \
   --acceptance="/products renders products in grid and list modes; product cards link to /products/[id]; npx tsc --noEmit passes."
 ```
+
+> **`remotePatterns` follows the seed.** Whatever image host(s) you used in `prisma/products.json` (Pexels, Unsplash, your tutor's CDN, etc.) must be added to `next.config.ts` `images.remotePatterns`, or `next/image` will refuse to render them. Phase 6.3 will additionally add the Supabase Storage hostname for admin-uploaded images.
 
 ### 3.4 Build home page hero and featured products
 
@@ -473,6 +493,8 @@ bd create \
   --description="Install @supabase/supabase-js. Create utils/supabase.ts with Supabase client, bucket name, uploadImage, and deleteImage helpers. Add Supabase storage hostname to Next image remotePatterns. Do not implement product CRUD yet." \
   --acceptance="uploadImage returns public URL for valid image; deleteImage removes object by public URL filename; npx tsc --noEmit passes."
 ```
+
+> **Supabase API key naming.** Newer Supabase projects (created mid-2025+) issue **publishable** keys named `sb_publishable_…` and ship them via `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, replacing the legacy `anon` key (`NEXT_PUBLIC_SUPABASE_ANON_KEY`). The `@supabase/supabase-js` `createClient` call accepts either, so use whichever name your `.env` actually has. If both forms are documented in the manual you're following, prefer the publishable name on new projects and record the choice in `docs/learning.md` if it surfaces in shared code.
 
 ### 6.4 Implement create product action and page
 
