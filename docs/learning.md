@@ -11,6 +11,45 @@ Lightweight ADR-style record of decisions and gotchas discovered while building 
 
 ---
 
+## L-004 · Clerk v7 replaced `<SignedIn>`/`<SignedOut>` with unified `<Show when=...>`
+
+- **Date**: 2026-05-06
+- **Status**: active
+- **Phase**: 4.3
+- **Files**: `components/navbar/LinksDropdown.tsx`
+
+**Context.** `@clerk/nextjs` v7 (the version `npm install @clerk/nextjs` resolves to in May 2026) removed the `SignedIn` and `SignedOut` named exports. They're replaced by a single async server component:
+
+```tsx
+<Show when="signed-in">…</Show>
+<Show when="signed-out">…</Show>
+```
+
+`Show` also accepts `permission`, `role`, or a function predicate, so it subsumes the prior `<Protect>` component as well.
+
+**Decision.** Use `<Show when="signed-in">` / `<Show when="signed-out">` in place of `<SignedIn>` / `<SignedOut>` throughout the app. Tutorial-style code that imports `SignedIn`/`SignedOut` from `@clerk/nextjs` will fail TypeScript with `TS2305: Module ... has no exported member 'SignedOut'`.
+
+**Migration cost if revisited.** If we ever pin Clerk back to v6, swap each `<Show when="signed-in">` for `<SignedIn>` and update the import. ~2 minutes per occurrence.
+
+---
+
+## L-003 · Next 16 renamed `middleware.ts` → `proxy.ts`
+
+- **Date**: 2026-05-06
+- **Status**: active
+- **Phase**: 4.2
+- **Files**: `proxy.ts`
+
+**Context.** Next.js 16 deprecated the `middleware.ts` file convention. Keeping the file at `middleware.ts` still works but emits a startup warning: *"The 'middleware' file convention is deprecated. Please use 'proxy' instead."* Internally Next 16 already labels middleware timings as `proxy.ts` in dev logs.
+
+**Decision.** Use `proxy.ts` at the project root. The exported function is still produced by Clerk's `clerkMiddleware()` — only the filename changes. PLAN.md Phase 4.2 was written against the old name; we're deviating to track Next 16.
+
+**Clerk-side note.** With Clerk v7, `auth.protect()` defaults to a 404 for unauthenticated non-API requests. To get the conventional sign-in redirect that the bead's "private routes require sign-in" implies, destructure `redirectToSignIn` from `auth()` and call it explicitly when `userId` is falsy. The 404 default is intentional (hides protected resource existence) but does not match the manual's UX expectation.
+
+**Migration cost if revisited.** Trivial — rename file back to `middleware.ts` and accept the deprecation warning until Next removes the alias. Estimated effort: ~30 sec.
+
+---
+
 ## L-002 · Prisma 7 with driver adapter (PrismaPg)
 
 - **Date**: 2026-05-05
