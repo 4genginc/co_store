@@ -9,7 +9,7 @@ import {
   validateWithZodSchema,
   validateImageFile,
 } from "@/utils/schemas";
-import { uploadImage, deleteImage } from "@/utils/supabase";
+import { uploadImage, deleteImage, bucket } from "@/utils/supabase";
 import type { ActionState } from "@/components/form/FormContainer";
 
 export async function createProductAction(
@@ -81,6 +81,53 @@ export async function updateProductAction(
   } catch (e) {
     return {
       message: e instanceof Error ? e.message : "could not update product",
+      success: false,
+    };
+  }
+}
+
+export async function updateProductImageAction(
+  _prev: ActionState,
+  formData: FormData
+): Promise<ActionState> {
+  try {
+    await getAdminUser();
+    const productId = formData.get("productId");
+    if (typeof productId !== "string" || productId.length === 0) {
+      return { message: "missing product id", success: false };
+    }
+    const imageResult = validateImageFile(formData.get("image"));
+    if (!imageResult.ok) {
+      return { message: imageResult.message, success: false };
+    }
+    const product = await db.product.findUnique({ where: { id: productId } });
+    if (!product) {
+      return { message: "product not found", success: false };
+    }
+    const newUrl = await uploadImage(imageResult.data);
+    const oldUrl = product.image;
+    await db.product.update({
+      where: { id: productId },
+      data: { image: newUrl },
+    });
+    // Best-effort cleanup of old image. Skip if the old URL isn't in our
+    // bucket (e.g., seeded products point at MicroEmbedded's S3 — not ours
+    // to delete).
+    if (oldUrl.includes(`/${bucket}/`)) {
+      try {
+        await deleteImage(oldUrl);
+      } catch (e) {
+        console.error("[supabase] old image cleanup failed:", e);
+      }
+    }
+    revalidatePath("/products");
+    revalidatePath(`/products/${productId}`);
+    revalidatePath("/admin/products");
+    revalidatePath(`/admin/products/${productId}/edit`);
+    return { message: "image updated", success: true };
+  } catch (e) {
+    return {
+      message: e instanceof Error ? e.message : "could not update image",
       success: false,
     };
   }
