@@ -21,7 +21,10 @@ export const productSchema = z.object({
     .string()
     .min(10, "description must be at least 10 characters")
     .max(2000, "description must be 2000 characters or fewer"),
-  featured: z.coerce.boolean(),
+  featured: z.preprocess(
+    (v) => v === "on" || v === true || v === "true",
+    z.boolean()
+  ),
   price: z.coerce
     .number({ error: "price must be a number" })
     .int("price must be a whole number of cents")

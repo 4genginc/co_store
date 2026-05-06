@@ -12,14 +12,20 @@ export const uploadImage = async (image: File): Promise<string> => {
   const { data, error } = await supabase.storage
     .from(bucket)
     .upload(newName, image, { cacheControl: "3600" });
-  if (error || !data) throw new Error("Image upload failed");
+  if (error || !data) {
+    console.error("[supabase] upload failed:", error);
+    throw new Error(`image upload failed: ${error?.message ?? "unknown error"}`);
+  }
   return supabase.storage.from(bucket).getPublicUrl(newName).data.publicUrl;
 };
 
 export const deleteImage = async (publicUrl: string): Promise<void> => {
   const parts = publicUrl.split(`/${bucket}/`);
-  if (parts.length < 2) throw new Error("Invalid Supabase public URL");
+  if (parts.length < 2) throw new Error("invalid Supabase public URL");
   const path = parts[1];
   const { error } = await supabase.storage.from(bucket).remove([path]);
-  if (error) throw new Error("Image deletion failed");
+  if (error) {
+    console.error("[supabase] delete failed:", error);
+    throw new Error(`image deletion failed: ${error.message}`);
+  }
 };

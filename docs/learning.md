@@ -11,6 +11,35 @@ Lightweight ADR-style record of decisions and gotchas discovered while building 
 
 ---
 
+## L-007 · Supabase Storage RLS is a backstop, not the auth boundary (Clerk-not-Supabase-Auth setup)
+
+- **Date**: 2026-05-06
+- **Status**: active
+- **Phase**: 6.4
+- **Files**: `utils/supabase.ts`, `utils/admin.ts`, Supabase Storage policy on `product-images`
+
+**Context.** Auth is Clerk; Storage is Supabase. The `@supabase/supabase-js` client we instantiate in `utils/supabase.ts` uses the publishable key, which means every Storage call hits Supabase as the `anon` Postgres role — Supabase has no idea who the Clerk-signed-in user is. Default Supabase Storage RLS denies INSERT/UPDATE/DELETE for `anon`, so the first real upload hit `new row violates row-level security policy` even though the bucket was marked "public" (which only governs reads).
+
+**Decision.** As a deliberate bridge design:
+
+- **Auth boundary lives in Next.js, not Supabase.** The proxy gate on `/admin/*` (`isAdmin`) plus `getAdminUser()` inside `createProductAction` is what actually enforces "only admins can create products." Supabase RLS is a backstop, not the primary boundary.
+- **Permissive dev policy on `product-images`.** A single policy grants `anon` + `authenticated` full access (`SELECT/INSERT/UPDATE/DELETE`) scoped to `bucket_id = 'product-images'`. This unblocks Phase 6 without forcing us to wire a Clerk→Supabase JWT bridge before we have any product data.
+- **One client, one role.** All Storage operations go through the single `supabase` client in `utils/supabase.ts`. We don't quietly slip in a service-role key (which would bypass RLS entirely and is far worse than a permissive policy because it removes the bucket-scope guard).
+
+**Failure mode this avoids.** Adding a `SUPABASE_SERVICE_ROLE_KEY` for the upload path would silently grant the server full database access, including tables we never intended to expose. Permissive RLS scoped to `product-images` keeps the blast radius bounded to that bucket.
+
+**Future migration path.** When we want Supabase RLS to actually carry weight (multi-tenant data, customer uploads, etc.):
+
+1. Stand up a Clerk → Supabase JWT bridge (Clerk JWT template signed with Supabase JWT secret).
+2. On the client/server, call `supabase.auth.setSession({ access_token })` with the Clerk-issued JWT.
+3. Replace the permissive `product-images` policy with one keyed on `auth.jwt()` (e.g., admin role claim).
+4. Tighten further policies on any new buckets/tables as they appear.
+5. Mark this entry `superseded` and link to the migration entry.
+
+**Migration cost if revisited.** Trivial to roll back to "no policy" by dropping the policy in the SQL editor. Migrating *forward* to JWT-based RLS is the real exit cost: ~half a day for the JWT template, session wiring, and policy rewrite.
+
+---
+
 ## L-006 · Supabase publishable key (`sb_publishable_…`) replaces legacy `anon` key
 
 - **Date**: 2026-05-06
