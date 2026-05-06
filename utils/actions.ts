@@ -39,6 +39,13 @@ export async function fetchSingleProduct(productId: string) {
   return product;
 }
 
+export async function fetchAdminProducts() {
+  await getAdminUser();
+  return db.product.findMany({
+    orderBy: { createdAt: "desc" },
+  });
+}
+
 export async function createProductAction(
   _prev: ActionState,
   formData: FormData
