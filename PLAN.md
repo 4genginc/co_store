@@ -427,7 +427,7 @@ Create admin dashboard structure and admin-only access control.
 ```bash
 bd create \
   --title="Create admin dashboard layout" \
-  --description="Add adminLinks to utils/links.ts. Create app/admin/layout.tsx and app/admin/Sidebar.tsx with active route styling. Create placeholder admin sales, products, and product create pages. Do not implement CRUD yet." \
+  --description="Add adminLinks to utils/links.ts. Create app/admin/layout.tsx (route layout) and components/admin/Sidebar.tsx (reusable sidebar with active route styling — see docs/ARCHITECTURE.md: reusable components live under components/{domain}/, not app/). Create placeholder admin sales, products, and product create pages. Do not implement CRUD yet." \
   --acceptance="Admin layout renders sidebar and child pages; active link style works; npx tsc --noEmit passes."
 ```
 
