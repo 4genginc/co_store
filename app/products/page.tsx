@@ -1,4 +1,4 @@
-import { fetchAllProducts } from "@/utils/actions";
+import { fetchAllProducts } from "@/utils/queries";
 import ProductsContainer from "@/components/products/ProductsContainer";
 
 type ProductsPageProps = {

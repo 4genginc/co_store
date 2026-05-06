@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { fetchSingleProduct } from "@/utils/actions";
+import { fetchSingleProduct } from "@/utils/queries";
 import { formatCurrency } from "@/utils/format";
 import BreadCrumbs from "@/components/single-product/BreadCrumbs";
 import ProductRating from "@/components/single-product/ProductRating";

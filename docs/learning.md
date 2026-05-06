@@ -11,6 +11,35 @@ Lightweight ADR-style record of decisions and gotchas discovered while building 
 
 ---
 
+## L-008 · Server actions and server-only queries live in different files (`utils/actions.ts` vs `utils/queries.ts`)
+
+- **Date**: 2026-05-06
+- **Status**: active
+- **Phase**: 7.2
+- **Files**: `utils/actions.ts`, `utils/queries.ts`
+
+**Context.** PLAN.md describes everything as living in `utils/actions.ts` — both server-only data fetchers (`fetchFeaturedProducts`, `fetchSingleProduct`) and server actions invoked from client components (`createProductAction`, `deleteProductAction`). That works only as long as no client component imports from the file. The first time a client component (`DeleteProductForm.tsx`) imported `deleteProductAction`, Next.js refused to build:
+
+> It is not allowed to define inline `"use server"` annotated Server Actions in Client Components.
+
+Inline `"use server"` directives only work for server actions defined inside server components. When a *client* component imports a function from a module, the entire module is treated as client-bundled — and Next.js requires a top-level `"use server"` directive to mark exports as server actions instead. But putting `"use server"` at the top of a mixed module turns the data fetchers into server actions too, which is wrong (they'd become RPC endpoints with extra overhead and a different security surface).
+
+**Decision.** Split by *call site*, not by domain:
+
+- **`utils/actions.ts`** — `"use server"` at the top. Contains only functions that are invoked from client components (server actions). Currently: `createProductAction`, `deleteProductAction`. Adding more in later phases (`updateProductAction`, `toggleFavoriteAction`, etc.) goes here.
+- **`utils/queries.ts`** — no directive. Contains server-only data fetchers called from server components. Currently: `fetchFeaturedProducts`, `fetchAllProducts`, `fetchSingleProduct`, `fetchAdminProducts`.
+
+This deviates from PLAN.md's single-`actions.ts` convention but matches the Next.js App Router constraint. PLAN.md's example `bd create` blocks reference fetch helpers and action helpers without distinguishing files; treat any future PLAN.md reference to `utils/actions.ts` as "the right of the two files" and pick by call site.
+
+**Rule of thumb when adding a new function.**
+
+- *Will a client component (`"use client"` file) import this?* → `utils/actions.ts`.
+- *Only server components / route handlers?* → `utils/queries.ts`.
+
+**Migration cost if revisited.** If a future Next.js version supports inline `"use server"` from client-imported modules, we could collapse back to one file by deleting the directive at the top of `actions.ts` and adding inline directives. But the split actually reads cleaner (intent is visible at the file level), so we'd probably keep it. ~5 min to merge if we ever wanted to.
+
+---
+
 ## L-007 · Supabase Storage RLS is a backstop, not the auth boundary (Clerk-not-Supabase-Auth setup)
 
 - **Date**: 2026-05-06

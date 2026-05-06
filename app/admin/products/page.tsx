@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Edit2, Trash2 } from "lucide-react";
+import { Edit2 } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -9,8 +9,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Button, buttonVariants } from "@/components/ui/button";
-import { fetchAdminProducts } from "@/utils/actions";
+import { buttonVariants } from "@/components/ui/button";
+import DeleteProductForm from "@/components/admin/DeleteProductForm";
+import { fetchAdminProducts } from "@/utils/queries";
 import { formatCurrency } from "@/utils/format";
 
 export default async function AdminProductsPage() {
@@ -61,15 +62,7 @@ export default async function AdminProductsPage() {
                 >
                   <Edit2 className="size-4" />
                 </Link>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  aria-label="delete product"
-                  disabled
-                  title="delete is wired in P7.2"
-                >
-                  <Trash2 className="size-4" />
-                </Button>
+                <DeleteProductForm productId={product.id} />
               </TableCell>
             </TableRow>
           ))}
