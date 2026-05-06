@@ -1,12 +1,18 @@
+require("dotenv/config");
 const { PrismaClient } = require("@prisma/client");
+const { PrismaPg } = require("@prisma/adapter-pg");
 const products = require("./products.json");
 
-const db = new PrismaClient();
+const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
+const db = new PrismaClient({ adapter });
 
 async function main() {
+  await db.product.deleteMany({});
   for (const product of products) {
     await db.product.create({ data: product });
   }
+  const count = await db.product.count();
+  console.log(`Seeded ${count} products.`);
 }
 
 main()

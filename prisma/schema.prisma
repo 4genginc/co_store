@@ -3,9 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
+  provider = "postgresql"
 }
 
 model Product {
@@ -16,6 +14,7 @@ model Product {
   featured    Boolean  @default(false)
   image       String
   price       Int
+  priceNote   String?
   clerkId     String
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt

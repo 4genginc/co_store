@@ -1,56 +1,52 @@
 [
   {
-    "name": "Avant-Garde Lamp",
-    "company": "Modenza",
-    "description": "A bold sculptural floor lamp with a brushed-brass arm and an opal-glass shade. Ambient warm light for reading nooks and entryways.",
+    "name": "L-SDR-U2™",
+    "company": "MicroEmbedded, Inc",
+    "description": "A USRP2-class SDR motherboard designed for higher-throughput, FPGA-based, and networked SDR applications. Board-only platform intended for evaluation, lab use, or replacement in existing USRP2/N210-style systems. Compatible with established SDR software stacks including GNU Radio.",
     "featured": true,
-    "image": "https://images.pexels.com/photos/2079246/pexels-photo-2079246.jpeg",
-    "price": 17999,
-    "clerkId": "seed_user"
+    "image": "https://rfpga.s3.us-west-1.amazonaws.com/website/images/L-SDR-U2-100_p.png",
+    "price": 120000,
+    "priceNote": "Indicative single-unit / evaluation pricing. Volume and enterprise terms via RFQ.",
+    "clerkId": "clerkId"
   },
   {
-    "name": "Comfy Sectional Sofa",
-    "company": "Luxora",
-    "description": "Modular sectional with deep seats, removable covers, and a hardwood frame. Configurable for studios up to great rooms.",
+    "name": "L-SDR-U1™",
+    "company": "MicroEmbedded, Inc",
+    "description": "A USRP1-compatible SDR motherboard designed for continuity with legacy GNU Radio workflows. Suitable for research, education, and long-lived field systems built around the original USRP1 ecosystem. Board-only configuration.",
     "featured": true,
-    "image": "https://images.pexels.com/photos/1571460/pexels-photo-1571460.jpeg",
-    "price": 129900,
-    "clerkId": "seed_user"
+    "image": "https://rfpga.s3.us-west-1.amazonaws.com/website/images/L-SDR-U1-000_p.png",
+    "price": 62500,
+    "priceNote": "Indicative single-unit / evaluation pricing. Volume and enterprise terms via RFQ.",
+    "clerkId": "clerkId"
   },
   {
-    "name": "Minimalist Wooden Desk",
-    "company": "Artifex",
-    "description": "Solid oak desk with cable management and a smooth matte finish. Sized for a 27-inch monitor and a focused setup.",
+    "name": "RF900™",
+    "company": "MicroEmbedded, Inc",
+    "description": "A 900 MHz RF daughterboard compatible with the RFX900 design lineage. Intended for sub-1 GHz wireless applications including ISM-band communications, telemetry, and legacy SDR deployments requiring stable RF performance.",
     "featured": false,
-    "image": "https://images.pexels.com/photos/1957477/pexels-photo-1957477.jpeg",
-    "price": 49999,
-    "clerkId": "seed_user"
+    "image": "https://rfpga.s3.us-west-1.amazonaws.com/website/images/RF900_p.png",
+    "price": 27500,
+    "priceNote": "Indicative single-unit pricing. Quantity, QA scope, and calibration options via RFQ.",
+    "clerkId": "clerkId"
   },
   {
-    "name": "Modern Lounge Chair",
-    "company": "Comfora",
-    "description": "Curved walnut frame with linen upholstery. Ergonomic recline angle and removable seat cushion.",
+    "name": "URAN-1",
+    "company": "MicroEmbedded, Inc",
+    "description": "A compact SDR unit derived from the USRP1-compatible platform family. Optimized for embedded integration and system-level deployment where size, simplicity, and legacy software compatibility are priorities.",
     "featured": true,
-    "image": "https://images.pexels.com/photos/1148955/pexels-photo-1148955.jpeg",
-    "price": 64999,
-    "clerkId": "seed_user"
+    "image": "https://rfpga.s3.us-west-1.amazonaws.com/website/images/L-SDR-U1-100_p.png",
+    "price": 37500,
+    "priceNote": "Indicative single-unit pricing. Not intended for bulk or enterprise deployment without RFQ.",
+    "clerkId": "clerkId"
   },
   {
-    "name": "Industrial Bookshelf",
-    "company": "Homestead",
-    "description": "Steel-and-pine shelving unit with five tiers. Open-back design pairs equally well with books, plants, or vinyl.",
+    "name": "L-SDR-N210™",
+    "company": "MicroEmbedded, Inc",
+    "description": "A USRP-N210-class SDR motherboard providing higher data throughput, FPGA-based processing, and Ethernet-connected SDR operation. Board-only replacement or evaluation unit compatible with USRP2/N210-style system architectures.",
     "featured": false,
-    "image": "https://images.pexels.com/photos/1090638/pexels-photo-1090638.jpeg",
-    "price": 23999,
-    "clerkId": "seed_user"
-  },
-  {
-    "name": "Contemporary Dining Table",
-    "company": "Modenza",
-    "description": "Six-seat dining table with a tempered-glass top and powder-coated steel legs. Easy to clean, comfortable for long dinners.",
-    "featured": false,
-    "image": "https://images.pexels.com/photos/1395967/pexels-photo-1395967.jpeg",
-    "price": 89999,
-    "clerkId": "seed_user"
+    "image": "https://rfpga.s3.us-west-1.amazonaws.com/website/images/L-SDR-N2-200_p.png",
+    "price": 120000,
+    "priceNote": "Indicative single-unit / replacement pricing. Enterprise, volume, and QA requirements via RFQ.",
+    "clerkId": "clerkId"
   }
 ]

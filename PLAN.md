@@ -79,7 +79,8 @@ This plan was distilled from a written Next Store manual (the Coding Addict / Sm
 - Any deviation from the manual that affects future phases (version pin, env-var rename, image-host change, schema variation) gets a `docs/learning.md` entry.
 - Seed/fixture content (product catalog, hero images, copy) is treated as substitutable. Use the manual's data, your own catalog, or anything else that satisfies the bead's acceptance criterion. Note the choice in the relevant phase if it affects later phases (e.g. image hosts → `next.config.ts` `remotePatterns`).
 - Tracked deviations live in `docs/learning.md`. Open active deviations as of last edit:
-  - **L-001** — Prisma pinned to v6 (Prisma 7 moved datasource URLs out of `schema.prisma`). See Phase 2.1.
+  - **L-002** — Prisma 7 with driver adapter (PrismaPg). Connection URLs now live in `prisma.config.ts` (migrations) + the `PrismaPg` adapter (runtime). See Phase 2.1.
+  - **L-001** — *superseded by L-002.* Initial decision was to pin Prisma 6; we revisited that before Phase 3.
 
 ---
 
@@ -218,7 +219,7 @@ bd create \
   --acceptance="Prisma client generates successfully; utils/db.ts exports singleton client; npx tsc --noEmit passes."
 ```
 
-> **Version note.** Pin `prisma@^6` + `@prisma/client@^6`. Prisma 7 moved `url` and `directUrl` out of `schema.prisma` into `prisma.config.ts` + driver adapters, which doesn't match the schema-based pattern this phase describes. See `docs/learning.md` entry **L-001** for the v7 migration path when upgrading.
+> **Version note (current).** Use Prisma 7 with the driver-adapter pattern: `prisma@^7`, `@prisma/client@^7`, `@prisma/adapter-pg`, `pg`, plus `dotenv` (dev) for `.env` loading in non-Next.js contexts. The `schema.prisma` `datasource` block keeps only `provider`; connection URLs live in `prisma.config.ts` (`DIRECT_URL`, used by `prisma generate` / `prisma db push` / migrations) and in `utils/db.ts` (`DATABASE_URL`, passed to `PrismaPg` for runtime queries). See `docs/learning.md` entry **L-002** for the rationale and exact file layout. (L-001 captured the earlier v6 decision and is superseded.)
 
 ### 2.2 Add Product model
 
@@ -229,6 +230,8 @@ bd create \
   --acceptance="Product model exists in Prisma schema; database schema is synced; Prisma Studio can show Product table."
 ```
 
+> **Schema extension.** This project also carries `priceNote String?` on `Product` to support catalogs where every SKU has an indicative-pricing footnote (e.g., "evaluation pricing — volume terms via RFQ"). Treat the field as optional in form/UI scaffolding; if your seed catalog doesn't use it, leave it null.
+
 ### 2.3 Seed initial products
 
 ```bash
@@ -238,7 +241,7 @@ bd create \
   --acceptance="node prisma/seed creates products; Prisma Studio shows seeded products; no duplicate seed failure on a clean database."
 ```
 
-> **Seed source.** `prisma/products.json` content is substitutable — manual catalog, your own catalog, or another tutorial's set. Whatever you pick, make sure the `image` URLs are reachable and add their hostname(s) to `next.config.ts` `remotePatterns` when Phase 3.3 lands. If your seed deviates from the source manual in a way that affects later phases (different field names, different image hosts, locale-specific copy), record it in `docs/learning.md`.
+> **Seed source (current).** `prisma/products.json` ships with the **MicroEmbedded SDR catalog** — 5 products (L-SDR-U2, L-SDR-U1, RF900, URAN-1, L-SDR-N210) with indicative cent-based pricing and a `priceNote` per item. Images are hosted at `rfpga.s3.us-west-1.amazonaws.com` (already wired into `next.config.ts` `remotePatterns`). The seed clears the `Product` table before inserting, so it's safely re-runnable. The catalog is still substitutable — if you swap it, update `next.config.ts` for the new image host(s) and record any structural deviation in `docs/learning.md`.
 
 ## Phase 2 Verification
 
@@ -301,7 +304,7 @@ bd create \
   --acceptance="/products renders products in grid and list modes; product cards link to /products/[id]; npx tsc --noEmit passes."
 ```
 
-> **`remotePatterns` follows the seed.** Whatever image host(s) you used in `prisma/products.json` (Pexels, Unsplash, your tutor's CDN, etc.) must be added to `next.config.ts` `images.remotePatterns`, or `next/image` will refuse to render them. Phase 6.3 will additionally add the Supabase Storage hostname for admin-uploaded images.
+> **`remotePatterns` follows the seed.** Whatever image host(s) the seed uses must be in `next.config.ts` `images.remotePatterns`, or `next/image` will refuse to render them. Currently configured: `rfpga.s3.us-west-1.amazonaws.com` (MicroEmbedded SDR catalog). Phase 6.3 will additionally add the Supabase Storage hostname for admin-uploaded images.
 
 ### 3.4 Build home page hero and featured products
 
