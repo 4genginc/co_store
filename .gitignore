@@ -38,8 +38,12 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
+# env files — real values stay local (.env, .env.local). The placeholder
+# template at the repo root (.env.example) IS committed so a fresh clone
+# has the canonical list. The leading slash on the exception keeps it
+# root-only so stray .env.example copies elsewhere stay ignored.
 .env*
+!/.env.example
 
 # vercel
 .vercel
