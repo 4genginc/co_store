@@ -52,6 +52,40 @@ export async function createProductAction(
   redirect("/admin/products");
 }
 
+export async function updateProductAction(
+  _prev: ActionState,
+  formData: FormData
+): Promise<ActionState> {
+  try {
+    await getAdminUser();
+    const productId = formData.get("productId");
+    if (typeof productId !== "string" || productId.length === 0) {
+      return { message: "missing product id", success: false };
+    }
+    const productResult = validateWithZodSchema(
+      productSchema,
+      Object.fromEntries(formData)
+    );
+    if (!productResult.ok) {
+      return { message: productResult.message, success: false };
+    }
+    await db.product.update({
+      where: { id: productId },
+      data: productResult.data,
+    });
+    revalidatePath("/products");
+    revalidatePath(`/products/${productId}`);
+    revalidatePath("/admin/products");
+    revalidatePath(`/admin/products/${productId}/edit`);
+    return { message: "product updated", success: true };
+  } catch (e) {
+    return {
+      message: e instanceof Error ? e.message : "could not update product",
+      success: false,
+    };
+  }
+}
+
 export async function deleteProductAction(
   _prev: ActionState,
   formData: FormData

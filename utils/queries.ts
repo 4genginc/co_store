@@ -1,4 +1,4 @@
-import { redirect } from "next/navigation";
+import { redirect, notFound } from "next/navigation";
 import { db } from "@/utils/db";
 import { getAdminUser } from "@/utils/admin";
 
@@ -36,4 +36,11 @@ export async function fetchAdminProducts() {
   return db.product.findMany({
     orderBy: { createdAt: "desc" },
   });
+}
+
+export async function fetchAdminProductDetails(productId: string) {
+  await getAdminUser();
+  const product = await db.product.findUnique({ where: { id: productId } });
+  if (!product) notFound();
+  return product;
 }
