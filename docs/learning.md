@@ -11,6 +11,21 @@ Lightweight ADR-style record of decisions and gotchas discovered while building 
 
 ---
 
+## L-006 · Supabase publishable key (`sb_publishable_…`) replaces legacy `anon` key
+
+- **Date**: 2026-05-06
+- **Status**: active
+- **Phase**: 6.3
+- **Files**: `utils/supabase.ts`, `.env`, `.env.example`
+
+**Context.** Supabase projects created mid-2025+ issue **publishable** keys (`sb_publishable_…`) in the dashboard's Project Settings → "Framework" tab and ship them via `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`. This replaces the legacy **anon** key (`NEXT_PUBLIC_SUPABASE_ANON_KEY`) that older tutorials and a lot of community code still reference. Both names are accepted by `@supabase/supabase-js` `createClient` — the client just wants a string — so the choice is purely about which env var name we standardize on.
+
+**Decision.** Use `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` everywhere. The Supabase client in `utils/supabase.ts` reads only this name. The legacy `…_ANON_KEY` name is not supported as a fallback — if a contributor's `.env` carries the older name, the client will fail to construct and the error will be loud, which is preferable to silently mixing key styles across environments.
+
+**Migration cost if revisited.** Trivial — rename the env var in `.env`, `.env.example`, and the single `process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` reference in `utils/supabase.ts`. Estimated effort: ~1 minute.
+
+---
+
 ## L-005 · `ADMIN_USER_IDS` as a bootstrap authorization mechanism
 
 - **Date**: 2026-05-06

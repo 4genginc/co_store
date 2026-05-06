@@ -7,6 +7,10 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "rfpga.s3.us-west-1.amazonaws.com",
       },
+      {
+        protocol: "https",
+        hostname: "jizwzssftlqosluclmpd.supabase.co",
+      },
     ],
   },
 };
