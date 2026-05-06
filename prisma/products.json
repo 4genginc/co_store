@@ -1,0 +1,56 @@
+[
+  {
+    "name": "Avant-Garde Lamp",
+    "company": "Modenza",
+    "description": "A bold sculptural floor lamp with a brushed-brass arm and an opal-glass shade. Ambient warm light for reading nooks and entryways.",
+    "featured": true,
+    "image": "https://images.pexels.com/photos/2079246/pexels-photo-2079246.jpeg",
+    "price": 17999,
+    "clerkId": "seed_user"
+  },
+  {
+    "name": "Comfy Sectional Sofa",
+    "company": "Luxora",
+    "description": "Modular sectional with deep seats, removable covers, and a hardwood frame. Configurable for studios up to great rooms.",
+    "featured": true,
+    "image": "https://images.pexels.com/photos/1571460/pexels-photo-1571460.jpeg",
+    "price": 129900,
+    "clerkId": "seed_user"
+  },
+  {
+    "name": "Minimalist Wooden Desk",
+    "company": "Artifex",
+    "description": "Solid oak desk with cable management and a smooth matte finish. Sized for a 27-inch monitor and a focused setup.",
+    "featured": false,
+    "image": "https://images.pexels.com/photos/1957477/pexels-photo-1957477.jpeg",
+    "price": 49999,
+    "clerkId": "seed_user"
+  },
+  {
+    "name": "Modern Lounge Chair",
+    "company": "Comfora",
+    "description": "Curved walnut frame with linen upholstery. Ergonomic recline angle and removable seat cushion.",
+    "featured": true,
+    "image": "https://images.pexels.com/photos/1148955/pexels-photo-1148955.jpeg",
+    "price": 64999,
+    "clerkId": "seed_user"
+  },
+  {
+    "name": "Industrial Bookshelf",
+    "company": "Homestead",
+    "description": "Steel-and-pine shelving unit with five tiers. Open-back design pairs equally well with books, plants, or vinyl.",
+    "featured": false,
+    "image": "https://images.pexels.com/photos/1090638/pexels-photo-1090638.jpeg",
+    "price": 23999,
+    "clerkId": "seed_user"
+  },
+  {
+    "name": "Contemporary Dining Table",
+    "company": "Modenza",
+    "description": "Six-seat dining table with a tempered-glass top and powder-coated steel legs. Easy to clean, comfortable for long dinners.",
+    "featured": false,
+    "image": "https://images.pexels.com/photos/1395967/pexels-photo-1395967.jpeg",
+    "price": 89999,
+    "clerkId": "seed_user"
+  }
+]
