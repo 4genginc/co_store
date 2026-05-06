@@ -11,6 +11,36 @@ Lightweight ADR-style record of decisions and gotchas discovered while building 
 
 ---
 
+## L-005 · `ADMIN_USER_IDS` as a bootstrap authorization mechanism
+
+- **Date**: 2026-05-06
+- **Status**: active
+- **Phase**: 5.2
+- **Files**: `utils/admin.ts`, `proxy.ts`, `components/navbar/LinksDropdown.tsx`, `.env`
+
+**Context.** PLAN.md 5.2 prescribes a singular `ADMIN_USER_ID` env var: one Clerk user is "the admin." The `.env.example` carried over from earlier scaffolding already used the plural `ADMIN_USER_IDS` (comma-separated). Phase 5 is the first time admin authorization actually has teeth, so this is the moment to commit to the plural shape rather than retrofit later.
+
+**Decision.** Use `ADMIN_USER_IDS` (comma-separated Clerk user IDs) as a deliberate bridge design, not just a convenience deviation:
+
+- **Bootstrap-only purpose.** `ADMIN_USER_IDS` exists to grant admin to one or more *initial* users without requiring a database role/permission system on day one. Phase 5 is too early to ship a roles table, an admin-management UI, or invitations.
+- **Fail closed.** When the env var is unset, empty, or all-whitespace, the helper must return `false` for every `userId`. No env value ⇒ no admins. The site behaves as if there are no admins, never as if anyone is.
+- **One helper, one source of truth.** All admin checks (proxy gate on `/admin/*`, conditional UI in `LinksDropdown`, future server actions) go through a single `isAdmin(userId)` helper in `utils/admin.ts`. Route files do not parse `ADMIN_USER_IDS` directly. This keeps the policy reversible from one file.
+- **Plural from day one.** Singular would mean rewriting the helper and every caller the moment we want a second admin. The cost of the plural form today is one `.split(",")`.
+
+**Future migration path.** When the project is ready for real authorization:
+
+1. Add a `Role` (or `permission`) model in Prisma.
+2. Backfill the existing `ADMIN_USER_IDS` entries into the new table (one-time script).
+3. Replace `isAdmin(userId)` to read from the database (with caching) instead of the env var.
+4. Add an admin-management UI (invite / promote / demote) so the env var stops being touched in production.
+5. Mark this entry `superseded` and link to the migration entry.
+
+The env-var stage is meant to be temporary scaffolding. It should not grow features (per-permission flags, granular scopes); the moment that pressure appears, build the database model.
+
+**Migration cost if revisited.** Trivial to fall back to singular: change `.split(",")` to a single value and update `.env`. Migrating *forward* to a roles table is the real exit cost — see steps above; estimated ~1 day for model + backfill + admin UI when the time comes.
+
+---
+
 ## L-004 · Clerk v7 replaced `<SignedIn>`/`<SignedOut>` with unified `<Show when=...>`
 
 - **Date**: 2026-05-06
