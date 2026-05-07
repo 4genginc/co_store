@@ -110,3 +110,91 @@ export async function fetchUserProductReview(productId: string) {
     where: { clerkId_productId: { clerkId: userId, productId } },
   });
 }
+
+// Cart helpers — used by cart server actions and cart page.
+// Kept here (not actions.ts) because they're not invoked from client
+// components directly; the server actions in utils/actions.ts compose them.
+
+// Throws if the product is missing, so callers running inside an action
+// try/catch can surface a clean error message to the user.
+export async function fetchProduct(productId: string) {
+  const product = await db.product.findUnique({ where: { id: productId } });
+  if (!product) throw new Error("product not found");
+  return product;
+}
+
+// Returns the user's cart, creating an empty one on first call. Pass
+// `errorOnFailure: true` from contexts where missing cart should be a
+// hard error (e.g. /cart route when we expect one to exist).
+export async function fetchOrCreateCart({
+  userId,
+  errorOnFailure = false,
+}: {
+  userId: string;
+  errorOnFailure?: boolean;
+}) {
+  const existing = await db.cart.findFirst({
+    where: { clerkId: userId },
+    include: { cartItems: { include: { product: true } } },
+  });
+  if (existing) return existing;
+  if (errorOnFailure) throw new Error("cart not found");
+  return db.cart.create({
+    data: { clerkId: userId },
+    include: { cartItems: { include: { product: true } } },
+  });
+}
+
+// Add `amount` of a product to the cart. If the line item exists,
+// increment; otherwise create a new line. Quantity totals are *not*
+// recomputed here — call updateCart(cartId) after to refresh denormalized
+// totals on the Cart row.
+export async function updateOrCreateCartItem({
+  productId,
+  cartId,
+  amount,
+}: {
+  productId: string;
+  cartId: string;
+  amount: number;
+}) {
+  const existing = await db.cartItem.findUnique({
+    where: { cartId_productId: { cartId, productId } },
+  });
+  if (existing) {
+    return db.cartItem.update({
+      where: { id: existing.id },
+      data: { amount: existing.amount + amount },
+    });
+  }
+  return db.cartItem.create({
+    data: { cartId, productId, amount },
+  });
+}
+
+// Recompute denormalized totals on the Cart row from current line items
+// and product prices. Returns the refreshed cart with items + products
+// included so callers don't need a follow-up read. Money values are
+// stored as integer cents to match Product.price.
+export async function updateCart(cartId: string) {
+  const cart = await db.cart.findUnique({
+    where: { id: cartId },
+    include: { cartItems: { include: { product: true } } },
+  });
+  if (!cart) throw new Error("cart not found");
+
+  let numItemsInCart = 0;
+  let cartTotal = 0;
+  for (const item of cart.cartItems) {
+    numItemsInCart += item.amount;
+    cartTotal += item.product.price * item.amount;
+  }
+  const tax = Math.round(cartTotal * cart.taxRate);
+  const orderTotal = cartTotal + tax + cart.shipping;
+
+  return db.cart.update({
+    where: { id: cart.id },
+    data: { numItemsInCart, cartTotal, tax, orderTotal },
+    include: { cartItems: { include: { product: true } } },
+  });
+}

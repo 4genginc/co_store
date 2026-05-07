@@ -18,8 +18,39 @@ model Product {
   clerkId     String
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
+  cartItems   CartItem[]
   favorites   Favorite[]
   reviews     Review[]
+}
+
+model Cart {
+  id             String     @id @default(uuid())
+  clerkId        String
+  cartItems      CartItem[]
+  numItemsInCart Int        @default(0)
+  cartTotal      Int        @default(0)
+  shipping       Int        @default(500)
+  tax            Int        @default(0)
+  taxRate        Float      @default(0.1)
+  orderTotal     Int        @default(0)
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  @@index([clerkId])
+}
+
+model CartItem {
+  id        String   @id @default(uuid())
+  cartId    String
+  cart      Cart     @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  amount    Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([cartId, productId])
+  @@index([cartId])
 }
 
 model Review {
