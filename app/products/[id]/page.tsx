@@ -5,6 +5,7 @@ import BreadCrumbs from "@/components/single-product/BreadCrumbs";
 import ProductRating from "@/components/single-product/ProductRating";
 import AddToCart from "@/components/single-product/AddToCart";
 import FavoriteToggleButton from "@/components/products/FavoriteToggleButton";
+import ProductReviews from "@/components/reviews/ProductReviews";
 
 type SingleProductPageProps = {
   params: Promise<{ id: string }>;
@@ -51,6 +52,7 @@ export default async function SingleProductPage({
           <AddToCart productId={product.id} />
         </div>
       </div>
+      <ProductReviews productId={product.id} />
     </section>
   );
 }

@@ -99,3 +99,14 @@ export async function fetchUserReviews() {
     orderBy: { createdAt: "desc" },
   });
 }
+
+// Returns the current user's review for `productId` (or null if signed out
+// or hasn't reviewed). Used by the single-product page to hide the review
+// form once a user has already submitted one.
+export async function fetchUserProductReview(productId: string) {
+  const { userId } = await auth();
+  if (!userId) return null;
+  return db.review.findUnique({
+    where: { clerkId_productId: { clerkId: userId, productId } },
+  });
+}
