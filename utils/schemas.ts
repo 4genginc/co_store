@@ -48,6 +48,17 @@ export const reviewSchema = z.object({
 
 export type ReviewInput = z.infer<typeof reviewSchema>;
 
+export const cartItemSchema = z.object({
+  productId: z.string().min(1, "missing product id"),
+  amount: z.coerce
+    .number({ error: "amount is required" })
+    .int("amount must be a whole number")
+    .min(1, "amount must be at least 1")
+    .max(20, "amount must be 20 or fewer"),
+});
+
+export type CartItemInput = z.infer<typeof cartItemSchema>;
+
 export const imageSchema = z.object({
   image: z
     .instanceof(File, { error: "image is required" })

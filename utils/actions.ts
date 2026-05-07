@@ -6,11 +6,18 @@ import { currentUser } from "@clerk/nextjs/server";
 import { db } from "@/utils/db";
 import { getAdminUser, getAuthUser } from "@/utils/admin";
 import {
+  cartItemSchema,
   productSchema,
   reviewSchema,
   validateWithZodSchema,
   validateImageFile,
 } from "@/utils/schemas";
+import {
+  fetchOrCreateCart,
+  fetchProduct,
+  updateCart,
+  updateOrCreateCartItem,
+} from "@/utils/queries";
 import { uploadImage, deleteImage, bucket } from "@/utils/supabase";
 import type { ActionState } from "@/components/form/FormContainer";
 
@@ -247,6 +254,45 @@ export async function createReviewAction(
           : "could not submit review";
     return { message, success: false };
   }
+}
+
+export async function addToCartAction(
+  _prev: ActionState,
+  formData: FormData
+): Promise<ActionState> {
+  let success = false;
+  try {
+    const userId = await getAuthUser();
+    const result = validateWithZodSchema(
+      cartItemSchema,
+      Object.fromEntries(formData)
+    );
+    if (!result.ok) {
+      return { message: result.message, success: false };
+    }
+    // Validate the product exists before mutating the cart so a stale
+    // product id surfaces as an error instead of an orphan line item.
+    await fetchProduct(result.data.productId);
+
+    const cart = await fetchOrCreateCart({ userId });
+    await updateOrCreateCartItem({
+      productId: result.data.productId,
+      cartId: cart.id,
+      amount: result.data.amount,
+    });
+    await updateCart(cart.id);
+    revalidatePath("/cart");
+    success = true;
+  } catch (e) {
+    return {
+      message: e instanceof Error ? e.message : "could not add to cart",
+      success: false,
+    };
+  }
+  // redirect() throws internally — keep it outside the try/catch so the
+  // navigation control flow isn't swallowed as an action error.
+  if (success) redirect("/cart");
+  return { message: "", success: false };
 }
 
 export async function deleteReviewAction(

@@ -1,14 +1,13 @@
-import { Button } from "@/components/ui/button";
+import { auth } from "@clerk/nextjs/server";
+import AddToCartSignInPrompt from "./AddToCartSignInPrompt";
+import AddToCartForm from "./AddToCartForm";
 
 type AddToCartProps = {
   productId: string;
 };
 
-export default function AddToCart({ productId }: AddToCartProps) {
-  void productId;
-  return (
-    <Button className="capitalize mt-8" size="lg">
-      Add to cart
-    </Button>
-  );
+export default async function AddToCart({ productId }: AddToCartProps) {
+  const { userId } = await auth();
+  if (!userId) return <AddToCartSignInPrompt />;
+  return <AddToCartForm productId={productId} />;
 }
