@@ -295,6 +295,48 @@ export async function addToCartAction(
   return { message: "", success: false };
 }
 
+// Cart-row mutations. Plain (formData) -> Promise<void> shape so the
+// client can call them inside startTransition without juggling
+// ActionState. Ownership is enforced server-side: actions silently no-op
+// if the cart item doesn't belong to the signed-in user. The route is
+// behind the proxy auth gate, so getAuthUser() should not throw in
+// normal flow — but if it does, the error boundary will render rather
+// than mutating someone else's cart.
+
+export async function updateCartItemAmountAction(formData: FormData) {
+  const userId = await getAuthUser();
+  const cartItemId = formData.get("cartItemId");
+  if (typeof cartItemId !== "string" || cartItemId.length === 0) return;
+  const amount = Number(formData.get("amount"));
+  if (!Number.isInteger(amount) || amount < 1 || amount > 20) return;
+
+  const item = await db.cartItem.findUnique({
+    where: { id: cartItemId },
+    include: { cart: { select: { clerkId: true } } },
+  });
+  if (!item || item.cart.clerkId !== userId) return;
+
+  await db.cartItem.update({ where: { id: cartItemId }, data: { amount } });
+  await updateCart(item.cartId);
+  revalidatePath("/cart");
+}
+
+export async function removeCartItemAction(formData: FormData) {
+  const userId = await getAuthUser();
+  const cartItemId = formData.get("cartItemId");
+  if (typeof cartItemId !== "string" || cartItemId.length === 0) return;
+
+  const item = await db.cartItem.findUnique({
+    where: { id: cartItemId },
+    include: { cart: { select: { clerkId: true } } },
+  });
+  if (!item || item.cart.clerkId !== userId) return;
+
+  await db.cartItem.delete({ where: { id: cartItemId } });
+  await updateCart(item.cartId);
+  revalidatePath("/cart");
+}
+
 export async function deleteReviewAction(
   _prev: ActionState,
   formData: FormData
