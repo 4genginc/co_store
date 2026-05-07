@@ -11,7 +11,7 @@ Lightweight ADR-style record of decisions and gotchas discovered while building 
 
 ---
 
-## L-011 · Lazy-construct the Stripe client — v22 throws at module load, not at first call
+## L-011 · Lazy-construct third-party SDK clients (hit by Stripe v22 + `@supabase/supabase-js`)
 
 - **Date**: 2026-05-07
 - **Status**: active
@@ -47,6 +47,10 @@ export function stripe(): Stripe {
 Callers go from `stripe.checkout.sessions.create(...)` to `stripe().checkout.sessions.create(...)`. The build no longer evaluates `new Stripe(...)`; only the actual `/api/payment` and `/api/confirm` request paths do. A missing key now produces a clean per-request 500 instead of a build crash.
 
 **Rule of thumb.** For *any* third-party SDK constructed at module top-level from a runtime env var, prefer a lazy getter unless the SDK explicitly tolerates empty/lazy initialization. Cheap insurance against a build platform that doesn't expose the var to the build stage (Vercel scopes env vars per environment — Production / Preview / Development — and each scope is a separate failure mode).
+
+**Echo: `@supabase/supabase-js` had the identical shape.** The same Vercel build, after the Stripe fix, then failed with `supabaseUrl is required` while collecting page data for `/admin/products/[id]/edit`. `createClient(undefined, undefined)` throws at construction. Solution was identical: lazy `client()` getter + a `getBucket()` getter for `SUPABASE_BUCKET`, with all top-level constants removed. The `bucket` import in `utils/actions.ts` got swapped for `getBucket()` in the one inline path-check that referenced it.
+
+The pattern to internalize is broader than "Stripe v22": *any* SDK with a strict constructor (Stripe, Supabase, AWS SDKs, OpenAI, Pinecone, …) is a build-time landmine if instantiated at module top-level from an env var that might not be present in every build context.
 
 **Migration cost if revisited.** Trivial. If a future Stripe major restores lazy validation, swap the function back to a top-level constant (`export const stripe = new Stripe(...)`) and search-replace `stripe()` → `stripe`. ~2 minutes.
 

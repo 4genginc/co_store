@@ -18,7 +18,7 @@ import {
   updateCart,
   updateOrCreateCartItem,
 } from "@/utils/queries";
-import { uploadImage, deleteImage, bucket } from "@/utils/supabase";
+import { uploadImage, deleteImage, getBucket } from "@/utils/supabase";
 import type { ActionState } from "@/components/form/FormContainer";
 
 export async function createProductAction(
@@ -122,7 +122,7 @@ export async function updateProductImageAction(
     // Best-effort cleanup of old image. Skip if the old URL isn't in our
     // bucket (e.g., seeded products point at MicroEmbedded's S3 — not ours
     // to delete).
-    if (oldUrl.includes(`/${bucket}/`)) {
+    if (oldUrl.includes(`/${getBucket()}/`)) {
       try {
         await deleteImage(oldUrl);
       } catch (e) {
