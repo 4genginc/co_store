@@ -1,6 +1,7 @@
 import { redirect, notFound } from "next/navigation";
+import { auth } from "@clerk/nextjs/server";
 import { db } from "@/utils/db";
-import { getAdminUser } from "@/utils/admin";
+import { getAdminUser, getAuthUser } from "@/utils/admin";
 
 export async function fetchFeaturedProducts() {
   return db.product.findMany({
@@ -43,4 +44,27 @@ export async function fetchAdminProductDetails(productId: string) {
   const product = await db.product.findUnique({ where: { id: productId } });
   if (!product) notFound();
   return product;
+}
+
+// Returns the favorite row id for the current signed-in user + product, or
+// null if the user is signed out or hasn't favorited this product. Used by
+// FavoriteToggleButton to render filled vs empty state and pass the id back
+// to toggleFavoriteAction so the action knows whether to create or delete.
+export async function fetchFavoriteId(productId: string): Promise<string | null> {
+  const { userId } = await auth();
+  if (!userId) return null;
+  const favorite = await db.favorite.findUnique({
+    where: { clerkId_productId: { clerkId: userId, productId } },
+    select: { id: true },
+  });
+  return favorite?.id ?? null;
+}
+
+export async function fetchUserFavorites() {
+  const userId = await getAuthUser();
+  return db.favorite.findMany({
+    where: { clerkId: userId },
+    include: { product: true },
+    orderBy: { createdAt: "desc" },
+  });
 }

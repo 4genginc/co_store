@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { db } from "@/utils/db";
-import { getAdminUser } from "@/utils/admin";
+import { getAdminUser, getAuthUser } from "@/utils/admin";
 import {
   productSchema,
   validateWithZodSchema,
@@ -165,4 +165,42 @@ export async function deleteProductAction(
   revalidatePath("/products");
   revalidatePath("/admin/products");
   return { message: "product deleted", success: true };
+}
+
+export async function toggleFavoriteAction(
+  _prev: ActionState,
+  formData: FormData
+): Promise<ActionState> {
+  try {
+    const userId = await getAuthUser();
+    const productId = formData.get("productId");
+    if (typeof productId !== "string" || productId.length === 0) {
+      return { message: "missing product id", success: false };
+    }
+    const favoriteIdRaw = formData.get("favoriteId");
+    const favoriteId =
+      typeof favoriteIdRaw === "string" && favoriteIdRaw.length > 0
+        ? favoriteIdRaw
+        : null;
+
+    if (favoriteId) {
+      await db.favorite.delete({ where: { id: favoriteId } });
+    } else {
+      await db.favorite.create({ data: { clerkId: userId, productId } });
+    }
+
+    revalidatePath("/");
+    revalidatePath("/products");
+    revalidatePath(`/products/${productId}`);
+    revalidatePath("/favorites");
+    return {
+      message: favoriteId ? "removed from favorites" : "added to favorites",
+      success: true,
+    };
+  } catch (e) {
+    return {
+      message: e instanceof Error ? e.message : "could not update favorite",
+      success: false,
+    };
+  }
 }

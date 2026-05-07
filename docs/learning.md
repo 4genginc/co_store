@@ -11,6 +11,51 @@ Lightweight ADR-style record of decisions and gotchas discovered while building 
 
 ---
 
+## L-009 · `<SignInButton>` from `@clerk/nextjs` must be wrapped in a `"use client"` component when used from an async server component
+
+- **Date**: 2026-05-06
+- **Status**: active
+- **Phase**: 8.1
+- **Files**: `components/products/FavoriteSignInPrompt.tsx`, `components/products/FavoriteToggleButton.tsx`
+
+**Context.** Phase 8.1 needed `FavoriteToggleButton` to render a Clerk `<SignInButton mode="modal">` for signed-out users and a toggle form for signed-in users. The natural shape was an async server component that calls `auth()`, branches on `userId`, and returns one of:
+
+```tsx
+return (
+  <SignInButton mode="modal">
+    <button …><FaRegHeart /></button>
+  </SignInButton>
+);
+```
+
+That render path crashed with `@clerk/react: You've passed multiple children components to <SignInButton/>. You can only pass a single child component or text.` even though there is one JSX child. Internally `SignInButton` runs `React.Children.only(children)`, which throws when the children prop arrives as anything other than a single element — and when an async RSC renders a Clerk client component as a direct child, the children prop materializes as something `Children.only` rejects (likely the RSC payload's element-list shape, not a single element). `LinksDropdown` doesn't hit this because there's a Radix `<DropdownMenuItem>` (a client component) sitting between the server boundary and `<SignInButton>`, which means `<SignInButton>` is reached through a real client render path where the children prop is a normal single element.
+
+**Decision.** When using a Clerk button (`SignInButton`, `SignUpButton`, `SignOutButton`, etc.) directly from an async server component, wrap the entire Clerk-button-plus-its-child in a small `"use client"` component and render *that* from the server component. The Clerk button now sits in a normal client render and `Children.only` succeeds.
+
+```tsx
+// components/products/FavoriteSignInPrompt.tsx
+"use client";
+import { SignInButton } from "@clerk/nextjs";
+export default function FavoriteSignInPrompt() {
+  return (
+    <SignInButton mode="modal">
+      <button …><FaRegHeart /></button>
+    </SignInButton>
+  );
+}
+
+// FavoriteToggleButton.tsx (server)
+if (!userId) return <FavoriteSignInPrompt />;
+```
+
+**Failure mode this avoids.** The error doesn't surface in tsc, only at runtime, and the resulting page returns 500 — so this would have shipped silently if not for the smoke test. Future contributors reaching for `<SignInButton>` in a server component need a rule, not a workaround memorized only by whoever debugged it once.
+
+**Rule of thumb.** Any Clerk button component is a client primitive that wants its children handed to it from another client. Mix it directly with a server-only branch only via a `"use client"` wrapper. If you must inline it, a Radix client wrapper (`DropdownMenuItem`, etc.) sitting between also works — but a dedicated wrapper is clearer.
+
+**Migration cost if revisited.** If a future Clerk version makes `<SignInButton>` accept children directly from a server component, the wrapper becomes one indirection of dead weight — delete the `Favorite*Prompt` file and inline the JSX. Each call site is ~10 lines; ~5 minutes per site to migrate.
+
+---
+
 ## L-008 · Server actions and server-only queries live in different files (`utils/actions.ts` vs `utils/queries.ts`)
 
 - **Date**: 2026-05-06
