@@ -11,6 +11,32 @@ Lightweight ADR-style record of decisions and gotchas discovered while building 
 
 ---
 
+## L-010 · Stripe v21+ renamed `ui_mode: "embedded"` → `"embedded_page"`
+
+- **Date**: 2026-05-07
+- **Status**: active
+- **Phase**: 10.2
+- **Files**: `app/api/payment/route.ts`
+
+**Context.** Stripe Node SDK v21 (released 2026-03-25) pinned the API version to `2026-03-25.dahlia`, which renamed the `Checkout.SessionCreateParams.ui_mode` enum values:
+
+```ts
+// pre-v21
+type UiMode = 'embedded' | 'hosted' | 'custom';
+// v21+ (dahlia)
+type UiMode = 'elements' | 'embedded_page' | 'form' | 'hosted_page';
+```
+
+PLAN.md and Stripe's own React SDK docs were written against the old `'embedded'` value, so the obvious code (`ui_mode: "embedded"`) fails TypeScript with `Type '"embedded"' is not assignable to type 'UiMode | undefined'`. Some inline doc comments in the `stripe` package's own `.d.ts` files still reference the old name, which adds confusion.
+
+**Decision.** Use `'embedded_page'` for embedded checkout (and `'hosted_page'` if/when we add hosted-mode flows). The React SDK's `EmbeddedCheckoutProvider` doesn't care about the enum *name* — it drives off `client_secret` — so the rename is purely a server-side concern.
+
+A second related gotcha hit at the same time: `Stripe.Checkout.SessionCreateParams.LineItem` (the deeply nested type) is *not* reachable from `import type Stripe from "stripe"` because the top-level `Checkout` namespace exposes `SessionCreateParams` as a type *alias*, and TypeScript doesn't propagate nested namespaces through aliases. Workaround: don't pre-type the line-items array — build product/tax/shipping arrays separately and spread them into `line_items` inline. TS infers a structurally-compatible shape and Stripe accepts it.
+
+**Migration cost if revisited.** If a future Stripe SDK reverts or aliases `'embedded'`, swap one string literal in `route.ts`. ~30 sec.
+
+---
+
 ## L-009 · `<SignInButton>` from `@clerk/nextjs` must be wrapped in a `"use client"` component when used from an async server component
 
 - **Date**: 2026-05-06
