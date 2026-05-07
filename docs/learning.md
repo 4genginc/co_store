@@ -11,6 +11,47 @@ Lightweight ADR-style record of decisions and gotchas discovered while building 
 
 ---
 
+## L-011 · Lazy-construct the Stripe client — v22 throws at module load, not at first call
+
+- **Date**: 2026-05-07
+- **Status**: active
+- **Phase**: 11.3
+- **Files**: `utils/stripe.ts`, `app/api/payment/route.ts`, `app/api/confirm/route.ts`
+
+**Context.** The `stripe` Node SDK v22 constructor (`new Stripe(key)`) throws *eagerly* when given an empty/missing key:
+
+```
+Error: Neither apiKey nor config.authenticator provided
+    at Stripe._setAuthenticator
+    at new Stripe
+    at module evaluation
+```
+
+Earlier majors deferred validation — you could construct with an empty string and only fail when you actually called the API. v22 does not. This matters because Next.js `next build` evaluates every route module during the "Collecting page data" pass: any module that does `export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY ?? "")` will crash the build whenever `STRIPE_SECRET_KEY` isn't available *at build time*.
+
+The original Phase 10.2 wiring asserted in a comment that "the SDK throws at call time rather than at module load so a missing var only kills payment routes, not the whole app." That was wrong on v22.
+
+**Decision.** Lazy-construct the Stripe client. Export a function (`stripe()`) that constructs on first use and caches the instance:
+
+```ts
+let cached: Stripe | null = null;
+export function stripe(): Stripe {
+  if (cached) return cached;
+  const key = process.env.STRIPE_SECRET_KEY;
+  if (!key) throw new Error("STRIPE_SECRET_KEY is not set");
+  cached = new Stripe(key);
+  return cached;
+}
+```
+
+Callers go from `stripe.checkout.sessions.create(...)` to `stripe().checkout.sessions.create(...)`. The build no longer evaluates `new Stripe(...)`; only the actual `/api/payment` and `/api/confirm` request paths do. A missing key now produces a clean per-request 500 instead of a build crash.
+
+**Rule of thumb.** For *any* third-party SDK constructed at module top-level from a runtime env var, prefer a lazy getter unless the SDK explicitly tolerates empty/lazy initialization. Cheap insurance against a build platform that doesn't expose the var to the build stage (Vercel scopes env vars per environment — Production / Preview / Development — and each scope is a separate failure mode).
+
+**Migration cost if revisited.** Trivial. If a future Stripe major restores lazy validation, swap the function back to a top-level constant (`export const stripe = new Stripe(...)`) and search-replace `stripe()` → `stripe`. ~2 minutes.
+
+---
+
 ## L-010 · Stripe v21+ renamed `ui_mode: "embedded"` → `"embedded_page"`
 
 - **Date**: 2026-05-07

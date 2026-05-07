@@ -96,7 +96,7 @@ export async function POST(req: NextRequest) {
 
     const websiteUrl =
       process.env.NEXT_PUBLIC_WEBSITE_URL ?? "http://localhost:3000";
-    const session = await stripe.checkout.sessions.create({
+    const session = await stripe().checkout.sessions.create({
       // Stripe v21+ renamed ui_mode "embedded" → "embedded_page"
       // (and "hosted" → "hosted_page") under API version
       // 2026-03-25.dahlia. The React SDK still drives this via

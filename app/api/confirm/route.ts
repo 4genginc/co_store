@@ -34,7 +34,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.redirect(new URL("/cart", req.url));
     }
 
-    const session = await stripe.checkout.sessions.retrieve(sessionId);
+    const session = await stripe().checkout.sessions.retrieve(sessionId);
     if (session.status !== "complete") {
       console.warn(
         "[/api/confirm] session",

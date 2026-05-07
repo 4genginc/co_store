@@ -1,8 +1,21 @@
 import Stripe from "stripe";
 
-// Singleton Stripe client for server-side use only. The default API
-// version is the one bundled with the SDK; pinning is unnecessary while
-// we're on a single SDK major. STRIPE_SECRET_KEY must be set — we let
-// the SDK throw at call time rather than at module load so a missing
-// var only kills payment routes, not the whole app.
-export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY ?? "");
+// Lazy-constructed Stripe server client. Stripe v22's constructor
+// throws immediately when given an empty/missing secret key ("Neither
+// apiKey nor config.authenticator provided"), which crashes the
+// build's "Collecting page data" pass on any platform that doesn't
+// surface STRIPE_SECRET_KEY at build time. Deferring construction to
+// first call keeps the build green and scopes the failure to the
+// actual /api/payment + /api/confirm requests if the var is missing
+// at runtime.
+let cached: Stripe | null = null;
+
+export function stripe(): Stripe {
+  if (cached) return cached;
+  const key = process.env.STRIPE_SECRET_KEY;
+  if (!key) {
+    throw new Error("STRIPE_SECRET_KEY is not set");
+  }
+  cached = new Stripe(key);
+  return cached;
+}
