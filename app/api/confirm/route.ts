@@ -15,12 +15,9 @@ import { stripe } from "@/utils/stripe";
 // - Expected (abandoned / expired session, missing session_id) →
 //   redirect the user to /cart so they can retry. Log a warning.
 // - Unexpected (Stripe API error, DB error, mismatched ownership) →
-//   500 JSON with the *stage* that failed and the underlying error
-//   message inline. The opaque "could not confirm payment" reply
-//   hid which call was throwing during prod debugging — surfacing
-//   stage + message turns a black-box 500 into an immediate
-//   diagnosis. Acceptable for a test app; revisit before any
-//   real-user traffic.
+//   opaque 500 JSON to the browser. The internal `stage` and full
+//   error are written to console.error for server-side diagnosis;
+//   nothing useful to an attacker is in the response body.
 //
 // The handler is idempotent: hitting it twice for the same session
 // won't double-mark or error on the cart delete (deleteMany no-ops on
@@ -31,7 +28,7 @@ export async function GET(req: NextRequest) {
     stage = "auth";
     const { userId } = await auth();
     if (!userId) {
-      return NextResponse.json({ error: "unauthorized", stage }, { status: 401 });
+      return NextResponse.json({ error: "unauthorized" }, { status: 401 });
     }
 
     stage = "parse-query";
@@ -63,7 +60,7 @@ export async function GET(req: NextRequest) {
         "missing metadata orderId/cartId"
       );
       return NextResponse.json(
-        { error: "session metadata missing", stage },
+        { error: "session metadata missing" },
         { status: 500 }
       );
     }
@@ -72,10 +69,7 @@ export async function GET(req: NextRequest) {
     const order = await db.order.findUnique({ where: { id: orderId } });
     if (!order) {
       console.error("[/api/confirm] order", orderId, "not found");
-      return NextResponse.json(
-        { error: "order not found", stage, orderId },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "order not found" }, { status: 404 });
     }
     if (order.clerkId !== userId) {
       console.error(
@@ -86,10 +80,7 @@ export async function GET(req: NextRequest) {
         "but request from",
         userId
       );
-      return NextResponse.json(
-        { error: "forbidden", stage, orderClerkId: order.clerkId, requestUserId: userId },
-        { status: 403 }
-      );
+      return NextResponse.json({ error: "forbidden" }, { status: 403 });
     }
 
     if (!order.isPaid) {
@@ -107,10 +98,9 @@ export async function GET(req: NextRequest) {
     stage = "redirect";
     return NextResponse.redirect(new URL("/orders", req.url));
   } catch (error) {
-    const detail = error instanceof Error ? error.message : String(error);
     console.error(`[/api/confirm] stage=${stage}`, error);
     return NextResponse.json(
-      { error: "could not confirm payment", stage, detail },
+      { error: "could not confirm payment" },
       { status: 500 }
     );
   }
