@@ -172,11 +172,14 @@ export async function updateOrCreateCartItem({
   });
 }
 
-// Orders for the signed-in user, newest first. Used by /orders.
+// Paid orders for the signed-in user, newest first. Used by /orders.
+// Filters on isPaid=true so unpaid orders (created at place-order
+// time, before Stripe confirmation) don't surface as a phantom order
+// in the list — see /api/confirm for where they get flipped.
 export async function fetchUserOrders() {
   const userId = await getAuthUser();
   return db.order.findMany({
-    where: { clerkId: userId },
+    where: { clerkId: userId, isPaid: true },
     orderBy: { createdAt: "desc" },
   });
 }
