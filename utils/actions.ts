@@ -2,10 +2,12 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+import { currentUser } from "@clerk/nextjs/server";
 import { db } from "@/utils/db";
 import { getAdminUser, getAuthUser } from "@/utils/admin";
 import {
   productSchema,
+  reviewSchema,
   validateWithZodSchema,
   validateImageFile,
 } from "@/utils/schemas";
@@ -200,6 +202,80 @@ export async function toggleFavoriteAction(
   } catch (e) {
     return {
       message: e instanceof Error ? e.message : "could not update favorite",
+      success: false,
+    };
+  }
+}
+
+export async function createReviewAction(
+  _prev: ActionState,
+  formData: FormData
+): Promise<ActionState> {
+  try {
+    const userId = await getAuthUser();
+    const result = validateWithZodSchema(
+      reviewSchema,
+      Object.fromEntries(formData)
+    );
+    if (!result.ok) {
+      return { message: result.message, success: false };
+    }
+    const user = await currentUser();
+    const authorName =
+      `${user?.firstName ?? ""} ${user?.lastName ?? ""}`.trim() || "Anonymous";
+    const authorImageUrl = user?.imageUrl ?? "";
+
+    await db.review.create({
+      data: {
+        ...result.data,
+        clerkId: userId,
+        authorName,
+        authorImageUrl,
+      },
+    });
+    revalidatePath(`/products/${result.data.productId}`);
+    revalidatePath("/reviews");
+    return { message: "review submitted", success: true };
+  } catch (e) {
+    // Composite unique (clerkId, productId) prevents a second review from
+    // the same user. Map Prisma's P2002 to a human-readable message.
+    const message =
+      e instanceof Error && "code" in e && e.code === "P2002"
+        ? "you have already reviewed this product"
+        : e instanceof Error
+          ? e.message
+          : "could not submit review";
+    return { message, success: false };
+  }
+}
+
+export async function deleteReviewAction(
+  _prev: ActionState,
+  formData: FormData
+): Promise<ActionState> {
+  try {
+    const userId = await getAuthUser();
+    const reviewId = formData.get("reviewId");
+    if (typeof reviewId !== "string" || reviewId.length === 0) {
+      return { message: "missing review id", success: false };
+    }
+    const review = await db.review.findUnique({ where: { id: reviewId } });
+    if (!review) {
+      return { message: "review not found", success: false };
+    }
+    if (review.clerkId !== userId) {
+      return {
+        message: "you can only delete your own reviews",
+        success: false,
+      };
+    }
+    await db.review.delete({ where: { id: reviewId } });
+    revalidatePath(`/products/${review.productId}`);
+    revalidatePath("/reviews");
+    return { message: "review deleted", success: true };
+  } catch (e) {
+    return {
+      message: e instanceof Error ? e.message : "could not delete review",
       success: false,
     };
   }

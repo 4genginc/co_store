@@ -33,6 +33,21 @@ export const productSchema = z.object({
 
 export type ProductInput = z.infer<typeof productSchema>;
 
+export const reviewSchema = z.object({
+  productId: z.string().min(1, "missing product id"),
+  rating: z.coerce
+    .number({ error: "rating is required" })
+    .int("rating must be a whole number")
+    .min(1, "rating must be between 1 and 5")
+    .max(5, "rating must be between 1 and 5"),
+  comment: z
+    .string()
+    .min(10, "comment must be at least 10 characters")
+    .max(1000, "comment must be 1000 characters or fewer"),
+});
+
+export type ReviewInput = z.infer<typeof reviewSchema>;
+
 export const imageSchema = z.object({
   image: z
     .instanceof(File, { error: "image is required" })

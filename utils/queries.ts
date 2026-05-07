@@ -68,3 +68,34 @@ export async function fetchUserFavorites() {
     orderBy: { createdAt: "desc" },
   });
 }
+
+export async function fetchProductReviews(productId: string) {
+  return db.review.findMany({
+    where: { productId },
+    orderBy: { createdAt: "desc" },
+  });
+}
+
+// Aggregate average rating + total review count for a product. Returns
+// `{ rating: 0, count: 0 }` when there are no reviews so callers can
+// render placeholders without a null check.
+export async function fetchProductRating(productId: string) {
+  const result = await db.review.aggregate({
+    where: { productId },
+    _avg: { rating: true },
+    _count: { rating: true },
+  });
+  return {
+    rating: result._avg.rating ?? 0,
+    count: result._count.rating,
+  };
+}
+
+export async function fetchUserReviews() {
+  const userId = await getAuthUser();
+  return db.review.findMany({
+    where: { clerkId: userId },
+    include: { product: true },
+    orderBy: { createdAt: "desc" },
+  });
+}

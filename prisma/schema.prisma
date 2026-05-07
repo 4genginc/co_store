@@ -19,6 +19,24 @@ model Product {
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
   favorites   Favorite[]
+  reviews     Review[]
+}
+
+model Review {
+  id             String   @id @default(uuid())
+  clerkId        String
+  productId      String
+  product        Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  rating         Int
+  comment        String
+  authorName     String
+  authorImageUrl String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@unique([clerkId, productId])
+  @@index([productId])
+  @@index([clerkId])
 }
 
 model Favorite {
