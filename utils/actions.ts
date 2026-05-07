@@ -295,6 +295,62 @@ export async function addToCartAction(
   return { message: "", success: false };
 }
 
+// Place an order from the signed-in user's cart. Snapshots the cart's
+// computed totals onto the new Order row, then clears the cart's line
+// items and recomputes its totals back to zero. Phase 9.4 has no real
+// payment integration, so isPaid is set to true here — when Stripe
+// lands in Phase 10 this should flip to default false and only become
+// true after webhook confirmation.
+export async function createOrderAction(
+  _prev: ActionState,
+  _formData: FormData
+): Promise<ActionState> {
+  let success = false;
+  try {
+    const userId = await getAuthUser();
+    const user = await currentUser();
+    const email = user?.primaryEmailAddress?.emailAddress ?? "";
+    if (!email) {
+      return {
+        message: "your account has no email on file; cannot place order",
+        success: false,
+      };
+    }
+
+    const cart = await fetchOrCreateCart({ userId, errorOnFailure: true });
+    if (cart.cartItems.length === 0) {
+      return { message: "your cart is empty", success: false };
+    }
+
+    await db.$transaction([
+      db.order.create({
+        data: {
+          clerkId: userId,
+          products: cart.numItemsInCart,
+          orderTotal: cart.orderTotal,
+          tax: cart.tax,
+          shipping: cart.shipping,
+          email,
+          isPaid: true,
+        },
+      }),
+      db.cartItem.deleteMany({ where: { cartId: cart.id } }),
+    ]);
+    await updateCart(cart.id);
+    revalidatePath("/cart");
+    revalidatePath("/orders");
+    revalidatePath("/admin/sales");
+    success = true;
+  } catch (e) {
+    return {
+      message: e instanceof Error ? e.message : "could not place order",
+      success: false,
+    };
+  }
+  if (success) redirect("/orders");
+  return { message: "", success: false };
+}
+
 // Cart-row mutations. Plain (formData) -> Promise<void> shape so the
 // client can call them inside startTransition without juggling
 // ActionState. Ownership is enforced server-side: actions silently no-op

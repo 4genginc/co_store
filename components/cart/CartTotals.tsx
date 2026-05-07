@@ -1,4 +1,5 @@
 import { formatCurrency } from "@/utils/format";
+import PlaceOrderButton from "./PlaceOrderButton";
 
 type CartTotalsProps = {
   cart: {
@@ -26,6 +27,7 @@ export default function CartTotals({ cart }: CartTotalsProps) {
           emphasize
         />
       </dl>
+      <PlaceOrderButton />
     </div>
   );
 }

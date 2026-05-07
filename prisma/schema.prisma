@@ -53,6 +53,22 @@ model CartItem {
   @@index([cartId])
 }
 
+model Order {
+  id         String   @id @default(uuid())
+  clerkId    String
+  products   Int      @default(0)
+  orderTotal Int
+  tax        Int
+  shipping   Int
+  email      String
+  isPaid     Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([clerkId])
+  @@index([createdAt])
+}
+
 model Review {
   id             String   @id @default(uuid())
   clerkId        String

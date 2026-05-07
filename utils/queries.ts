@@ -172,6 +172,26 @@ export async function updateOrCreateCartItem({
   });
 }
 
+// Orders for the signed-in user, newest first. Used by /orders.
+export async function fetchUserOrders() {
+  const userId = await getAuthUser();
+  return db.order.findMany({
+    where: { clerkId: userId },
+    orderBy: { createdAt: "desc" },
+  });
+}
+
+// Paid orders across all users, newest first. Used by /admin/sales.
+// Filters to isPaid=true so the admin "sales" view isn't polluted by
+// abandoned non-Stripe orders once a real payment flow lands.
+export async function fetchAdminOrders() {
+  await getAdminUser();
+  return db.order.findMany({
+    where: { isPaid: true },
+    orderBy: { createdAt: "desc" },
+  });
+}
+
 // Recompute denormalized totals on the Cart row from current line items
 // and product prices. Returns the refreshed cart with items + products
 // included so callers don't need a follow-up read. Money values are
