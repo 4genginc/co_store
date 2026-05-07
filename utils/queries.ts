@@ -111,6 +111,21 @@ export async function fetchUserProductReview(productId: string) {
   });
 }
 
+// Number of items in the signed-in user's cart, or 0 for signed-out
+// users / users who haven't started a cart yet. Used by the navbar
+// CartButton on every page render. Deliberately *not* using
+// fetchOrCreateCart — we don't want to materialize an empty Cart row
+// for every visitor who hasn't opened /cart.
+export async function fetchCartItemCount(): Promise<number> {
+  const { userId } = await auth();
+  if (!userId) return 0;
+  const cart = await db.cart.findFirst({
+    where: { clerkId: userId },
+    select: { numItemsInCart: true },
+  });
+  return cart?.numItemsInCart ?? 0;
+}
+
 // Cart helpers — used by cart server actions and cart page.
 // Kept here (not actions.ts) because they're not invoked from client
 // components directly; the server actions in utils/actions.ts compose them.
